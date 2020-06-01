@@ -1,7 +1,7 @@
 # TimeKeeper
 Roll20 API script which tracks time and expiries. The time and expiries persist and are tracked between sessions. The GM advances the time; there is no automatic advancement of time. The script currently communicates only with the GM.
 
-Current commands (version 0.1):
+Current commands (version 0.1.1):
 <ul>
   <li>!tk - shows commands.</li>
   <li>!tk show - displays current time.</li>
@@ -29,4 +29,10 @@ These are some convenient macros to utilize the script:
     <td>!tk exp @{selected|character_name}|?{Ability, effect or spell}|?{Duration in minutes}</td><td>This macro is meant to be used as a Token Action. Adds an expiry for the character whose token was selected.</td>
   </tr>
   </table>
+  
+# Version History
+<ul>
+  <li>0.1 First public release</li>
+  <li>0.1.1 Minor formatting changes. No changes in functionality.</li>
+</ul>
   
