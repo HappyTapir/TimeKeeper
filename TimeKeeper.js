@@ -29,7 +29,7 @@ var HappyTapir = HappyTapir || {};
 //Declaration of the class TimeKeeper (under the HappyTapir namespace)
 HappyTapir.TimeKeeper = function () {
     this.ChatName = "TimeKeeper";
-    this.Version = "0.1.1";
+    this.Version = "0.1.2";
 
     this.Initialize = function () {
         //Setting global variables to persist between sessions
@@ -189,48 +189,49 @@ on("chat:message", function (msg) {
     //Parse the incoming message to see what needs to be done
     //Only API messages from the GM are recognized
 
-    //Whisper the list of commands accepted by the script to the GM
-    if (msg.type == "api" && msg.who.indexOf("(GM)") !== -1 && msg.content == "!tk") {
-        var timeKeeper = new HappyTapir.TimeKeeper();
-        timeKeeper.ShowCommands();
-    }
+    if (msg.type == "api" && playerIsGM(msg.playerid)) {
+        if (msg.content.slice(0, 3) == "!tk") {
+            var timeKeeper = new HappyTapir.TimeKeeper();
+            
+            if (msg.content == "!tk") timeKeeper.ShowCommands();
 
-    if (msg.type == "api" && msg.who.indexOf("(GM)") !== -1 && msg.content.indexOf("!tk ") !== -1) {
-        var timeKeeper = new HappyTapir.TimeKeeper();
-        var msgArray = [];
+            if (msg.content.indexOf("!tk ") !== -1) {
+                var msgArray = [];
 
-        //Whisper the time and current expiries to the GM
-        if (msg.content.indexOf(" show") !== -1) {
-            timeKeeper.ShowTime(state.TimeKeeperGlobals.CurrentTime);
-            timeKeeper.CheckAllExpiries();
-        }
+                //Whisper the time and current expiries to the GM
+                if (msg.content.indexOf(" show") !== -1) {
+                    timeKeeper.ShowTime(state.TimeKeeperGlobals.CurrentTime);
+                    timeKeeper.CheckAllExpiries();
+                }
 
-        //Set the time, then whisper current time and current expiries to the GM
-        if (msg.content.indexOf(" set ") !== -1) {
-            msgArray = msg.content.split(" ", 3);
-            if (msgArray.length == 3 && isNaN(msgArray[2]) == false) { // i.e., "!tk set x" where "x" is a number
-                state.TimeKeeperGlobals.CurrentTime = msgArray[2];
+                //Set the time, then whisper current time and current expiries to the GM
+                if (msg.content.indexOf(" set ") !== -1) {
+                    msgArray = msg.content.split(" ", 3);
+                    if (msgArray.length == 3 && isNaN(msgArray[2]) == false) { // i.e., "!tk set x" where "x" is a number
+                        state.TimeKeeperGlobals.CurrentTime = msgArray[2];
+                    }
+                    timeKeeper.ShowTime(state.TimeKeeperGlobals.CurrentTime);
+                    timeKeeper.CheckAllExpiries();
+                }
+
+                //Adjust the time, then whisper current time and current expiries to the GM
+                if (msg.content.indexOf(" add ") !== -1) {
+                    msgArray = msg.content.split(" ", 3);
+                    timeKeeper.AddSubtractTime(msgArray[2].toLowerCase());
+                    timeKeeper.ShowTime(state.TimeKeeperGlobals.CurrentTime);
+                    timeKeeper.CheckAllExpiries();
+                }
+
+                //Add expiry, sort the expiry list, and then provide feedback to the GM about the entered expiry
+                if (msg.content.indexOf(" exp ") !== -1) {
+                    var expiryString = msg.content.slice(7).trim();
+                    msgArray = expiryString.split("|") //pipe symbol used here since it is unlikely to appear in character names
+                    timeKeeper.AddExpiry(msgArray[0], msgArray[1], msgArray[2].toLowerCase());
+                    timeKeeper.SortExpiries();
+
+                    sendChat(timeKeeper.ChatName, "/w gm " + msgArray[0] + "'s " + msgArray[1] + " entered with expiry in " + timeKeeper.FormatTimeAsString(msgArray[2].toLowerCase()));
+                }
             }
-            timeKeeper.ShowTime(state.TimeKeeperGlobals.CurrentTime);
-            timeKeeper.CheckAllExpiries();
-        }
-
-        //Adjust the time, then whisper current time and current expiries to the GM
-        if (msg.content.indexOf(" add ") !== -1) {
-            msgArray = msg.content.split(" ", 3);
-            timeKeeper.AddSubtractTime(msgArray[2].toLowerCase());
-            timeKeeper.ShowTime(state.TimeKeeperGlobals.CurrentTime);
-            timeKeeper.CheckAllExpiries();
-        }
-
-        //Add expiry, sort the expiry list, and then provide feedback to the GM about the entered expiry
-        if (msg.content.indexOf(" exp ") !== -1) {
-            var expiryString = msg.content.slice(7).trim();
-            msgArray = expiryString.split("|") //pipe symbol used here since it is unlikely to appear in character names
-            timeKeeper.AddExpiry(msgArray[0], msgArray[1], msgArray[2].toLowerCase());
-            timeKeeper.SortExpiries();
-
-            sendChat(timeKeeper.ChatName, "/w gm " + msgArray[0] + "'s " + msgArray[1] + " entered with expiry in " + timeKeeper.FormatTimeAsString(msgArray[2].toLowerCase()));
         }
     }
 });
