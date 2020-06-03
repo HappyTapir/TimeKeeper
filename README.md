@@ -11,7 +11,7 @@ Current commands (version 0.1.3):
 </ul>
 
 # How do I...?
-How do I set the time to be 1 day, 2 hours and 4 minutes? The script stores the current time in minutes, so in order to set the time, or add time, you have to first calculate how many minutes to add. For example, setting the time to 1 day, 2 hours and 4 minutes would be done with the command <i>!tk set 1564</i>, where the calculation would have been 1440 + 120 + 4 minutes = 1564.
+How do I set the time to be 1 day, 2 hours and 4 minutes? The script stores the current time in minutes, so in order to set the time, or add time, you have to first calculate how many minutes to add. For example, setting the time to 1 day, 2 hours and 4 minutes would be done with the command <i>!tk set 1564</i>, where the calculation would have been 1440 + 120 + 4 minutes = 1564. See the macros below for one that will help you easily do this calculation.
 
 # Suggested Macros
 These are some convenient macros to utilize the script:
@@ -27,6 +27,9 @@ These are some convenient macros to utilize the script:
   </tr>
   <tr>
     <td>!tk exp @{selected|character_name}|?{Ability, effect or spell}|?{Duration in minutes}</td><td>This macro is meant to be used as a Token Action. Adds an expiry for the character whose token was selected.</td>
+  </tr>
+  <tr>
+    <td>/w gm [[?{Days|0}*1440 + ?{Hours|0}*60 + ?{Minutes|0}]]</td><td>A simple macro to convert times from days, hours and minutes into minutes. I use this to calculate larger time values for adding or setting.</td>
   </tr>
   </table>
   
