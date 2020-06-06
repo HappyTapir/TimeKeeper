@@ -29,7 +29,7 @@ var HappyTapir = HappyTapir || {};
 //Declaration of the class TimeKeeper (under the HappyTapir namespace)
 HappyTapir.TimeKeeper = function () {
     this.ChatName = "TimeKeeper";
-    this.Version = "0.1.3";
+    this.Version = "0.2.0";
 
     this.Initialize = function () {
         //Setting global variables to persist between sessions
@@ -55,75 +55,134 @@ HappyTapir.TimeKeeper = function () {
 
         //Send a message to the API engine log, and send a message to the game window that the script is initialized
         log(this.ChatName + " " + this.Version + " initialized. Command: !tk");
-        sendChat(this.ChatName, "/w gm Initialized! Current time: " + this.FormatTimeAsString(state.TimeKeeperGlobals.CurrentTime) + " Type !tk for commands.");
+
+        var messageArray = [];
+        messageArray.push("/w gm");
+        messageArray.push("{{name=" + this.FormatTimeAsString(state.TimeKeeperGlobals.CurrentTime, true) + "}}");
+        messageArray.push("{{" + this.ChatName + " " + this.Version + " initialized.}}");
+        messageArray.push("{{Type !tk for commands.}}");
+
+        sendChat(this.ChatName, this.BuildChatMessage(messageArray));
+    }
+
+    this.BuildChatMessage = function (messageArray) {
+        //This function builds a message that the calling
+        //function will send to the user
+
+        var message = "";
+        var i;
+
+        message += messageArray[0].trim(); //Adressee of the message
+        message += " &{template:default}";
+
+        for (i = 1; i < messageArray.length; i++) {
+            message += " " + messageArray[i].trim();
+        }
+        return message;
+    }
+
+    this.SendErrorMessage = function (errorArray) {
+        var messageArray = [];
+        messageArray.push("/w gm");
+        messageArray.push("{{name=" + this.ChatName + " " + this.Version + " Error}}");
+        messageArray.push("{{" + errorArray[0] + "=" + errorArray[1] + "}}");
+        sendChat(this.ChatName, this.BuildChatMessage(messageArray));
     }
 
     this.ShowCommands = function () {
         //Whisper a list of commands that TimeKeeper will accept
-        var commandString = "";
+        var messageArray = [];
+        messageArray.push("/w gm");
 
-        commandString = "<ul>";
-        commandString = commandString + "<li><b>!tk</b> - displays this information.</li>";
-        commandString = commandString + "<li><b>!tk show</b> - displays current time.</li>";
-        commandString = commandString + "<li><b>!tk set <i>X</i></b> - sets current time to <i>X</i> minutes.</li>";
-        commandString = commandString + "<li><b>!tk add <i>X</i></b> - adds <i>X</i> minutes to the current time. Use negative values to subtract time.</li>";
-        commandString = commandString + "<li><b>!tk exp <i>name</i>|<i>effect</i>|<i>duration</i></b> - adds an expiry <i>effect</i> for character <i>name</i>, with <i>duration</i> in minutes.</li>";
-        commandString = commandString + "</ul>";
+        messageArray.push("{{name=" + this.FormatTimeAsString(state.TimeKeeperGlobals.CurrentTime, true) + "}}");
+        messageArray.push("{{!tk - displays this information.}}");
+        messageArray.push("{{!tk show - displays expiries.}}");
+        messageArray.push("{{!tk set <i>X</i>- sets time to <i>X</i> minutes.}}");
+        messageArray.push("{{!tk add <i>X</i> - adds <i>X</i> minutes to time. Use negative values to subtract time.}}");
+        messageArray.push("{{!tk exp <i>name</i>|<i>effect</i>|<i>duration</i> - adds an expiry <i>effect</i> for character <i>name</i>, with <i>duration</i> in minutes.}}");
 
-        sendChat(this.ChatName, "/w gm " + commandString);
+        sendChat(this.ChatName, this.BuildChatMessage(messageArray));
     }
     
-    this.FormatTimeAsString = function (minutes) {
+    this.FormatTimeAsString = function (minutes, verbose) {
         //This formats minutes into days, hours and minutes
         var dayCount = 0;
         var hourCount = 0;
         var minuteCount = 0;
         var formattedTime = "";
 
+        var dayString = "d";
+        var hourString = "h";
+        var minuteString = "min";
+
+        if (verbose) {
+            dayString = " day";
+            hourString = " hour";
+            minuteString = " minute";
+        }
+
         dayCount = Math.floor(minutes / 1440);
         hourCount = Math.floor((minutes - dayCount * 1440) / 60);
         minuteCount = Math.floor(minutes % 60);
 
         //Formatting days (nothing for 0 days; 1 day; 2 days etc)
-        if (dayCount > 0) formattedTime = formattedTime + dayCount + " day";
-        if (dayCount > 1) formattedTime = formattedTime + "s";
-        if (dayCount > 0 && (hourCount > 0 || minuteCount > 0)) formattedTime = formattedTime + ", ";
+        if (dayCount > 0) formattedTime += dayCount + dayString;
+        if (dayCount > 1 && verbose) formattedTime += "s";
+        if (dayCount > 0 && (hourCount > 0 || minuteCount > 0)) {
+            if (verbose) formattedTime += ",";
+            formattedTime += " ";
+        }
 
         //Formatting hours (nothing for 0 hours; 1 hour; 2 hours etc)
-        if (hourCount > 0) formattedTime = formattedTime + hourCount + " hour";
-        if (hourCount > 1) formattedTime = formattedTime + "s";
-        if (hourCount > 0 && minuteCount > 0) formattedTime = formattedTime + ", ";
+        if (hourCount > 0) formattedTime += hourCount + hourString;
+        if (hourCount > 1 && verbose) formattedTime += "s";
+        if (hourCount > 0 && minuteCount > 0) {
+            if (verbose) formattedTime += ",";
+            formattedTime += " ";
+        }
 
         //Formatting minutes (nothing for 0 minutes; 1 minute; 2 minutes etc)
-        if (minuteCount > 0) formattedTime = formattedTime + minuteCount + " minute";
-        if (minuteCount > 1) formattedTime = formattedTime + "s";
+        if (minuteCount > 0) formattedTime += minuteCount + minuteString;
+        if (minuteCount > 1 && verbose) formattedTime += "s";
 
         //Special case for a newly started TimeKeeper in a game
         if (minutes == 0) formattedTime = minutes + " minutes";
 
-        //Adding final period (.)
-        formattedTime = formattedTime + ".";
-
         return formattedTime;
     }
 
-    this.ShowTime = function (minutes) {
-        //Send a whisper to the GM with a formatted time
-        if (isNaN(minutes)) {
-            sendChat(this.ChatName, "/w gm " + "Error: " + minutes + " is not a valid time.");
-            return;
+    this.ShowTimeAndExpiries = function (expiryArray) {
+        //Send a whisper to the GM with the current time and all expiries
+        var messageArray = [];
+        messageArray.push("/w gm");
+        messageArray.push("{{name=" + this.FormatTimeAsString(state.TimeKeeperGlobals.CurrentTime, true) + "}}");
+
+        if (expiryArray !== undefined) {
+            var remainingTime;
+            var remainingAsString;
+            var i;
+            for (i = 0; i < expiryArray.length; i++) {
+                if (this.HasExpired(expiryArray[i])) {
+                    messageArray.push("{{" + expiryArray[i][0] + "'s " + expiryArray[i][1] + "=expired}}");
+                }
+                else {
+                    remainingTime = parseInt(expiryArray[i][2]) - parseInt(state.TimeKeeperGlobals.CurrentTime);
+                    remainingAsString = this.FormatTimeAsString(remainingTime, false);
+                    messageArray.push("{{" + expiryArray[i][0] + "'s " + expiryArray[i][1] + "=" + remainingAsString + "}}");
+                }
+            }
         }
 
-        var time = "";
-        time = this.FormatTimeAsString(minutes);
-
-        sendChat(this.ChatName, "/w gm " + time);
+        sendChat(this.ChatName, this.BuildChatMessage(messageArray));
     }
 
     this.SetTime = function (minutes) {
         //Sets the current time to the desired minutes.
         if (minutes == "" || isNaN(minutes)) {
-            sendChat(this.ChatName, "/w gm " + "Error: " + minutes + " is not a valid time.");
+            var errorMessage = [];
+            errorMessage[0] = minutes;
+            errorMessage[1] = " is not a valid time.";
+            this.SendErrorMessage(errorMessage);
             return false;
         }
         state.TimeKeeperGlobals.CurrentTime = parseInt(minutes);
@@ -134,7 +193,10 @@ HappyTapir.TimeKeeper = function () {
         //Add a number of minutes to the current time. Adding negative values
         //subtracts minutes from the current time.
         if (minutes == "" || isNaN(minutes)) {
-            sendChat(this.ChatName, "/w gm " + "Error: " + minutes + " is not a valid time.");
+            var errorMessage = [];
+            errorMessage[0] = minutes;
+            errorMessage[1] = " is not a valid time.";
+            this.SendErrorMessage(errorMessage);
             return false;
         }
         state.TimeKeeperGlobals.CurrentTime = parseInt(state.TimeKeeperGlobals.CurrentTime) + parseInt(minutes);
@@ -144,7 +206,11 @@ HappyTapir.TimeKeeper = function () {
     this.AddExpiry = function (charName, effectName, duration) {
         //Creates a new expiry array of the format ["character name", "spell or effect name", time in minutes when the effect expires]
         if (charName == "" || effectName == "" || duration == "" || isNaN(duration)) {
-            sendChat(this.ChatName, "/w gm " + "Error: Not a valid entry.");
+            var errorMessage = [];
+            errorMessage[0] = charName + "|" + effectName + "|" + duration;
+            errorMessage[1] = " is not a valid expiry entry.";
+            this.SendErrorMessage(errorMessage);
+
             return false;
         }
 
@@ -156,22 +222,15 @@ HappyTapir.TimeKeeper = function () {
         return true;
     }
 
-    this.CheckExpiry = function (expiryItem) {
+    this.HasExpired = function (expiryItem) {
         //Checks whether a particular expiry item (an array) has expired
-        //Sends a whisper to the GM and returns true or false.
-
+        
         //If the item has expired, i.e. the expiry time of the array entry is now or in the past
         if (parseInt(expiryItem[2]) <= parseInt(state.TimeKeeperGlobals.CurrentTime)) {
-            sendChat(this.ChatName, "/w gm " + expiryItem[0] + "'s " + "<b>" + expiryItem[1] + " has expired.</b>");
-            return true;
+             return true;
         }
-        //if the item has not expired, i.e. the expiry time of the array entry isn't now or in the past
-        else {
-            var remainingTime = parseInt(expiryItem[2]) - parseInt(state.TimeKeeperGlobals.CurrentTime);
-            var remainingAsString = this.FormatTimeAsString(remainingTime);
-            sendChat(this.ChatName, "/w gm " + expiryItem[0] + "'s " + expiryItem[1] + " expires in " + remainingAsString);
-            return false;
-        }
+
+        return false;
     }
 
     this.SortExpiries = function () {
@@ -181,28 +240,26 @@ HappyTapir.TimeKeeper = function () {
         }
     }
 
-    this.CheckAllExpiries = function () {
-        //Loops through the current expiry array and updates it
+    this.GetActiveExpiries = function () {
+        //Returns an array of expiries that have not yet expired
+        var newExpiryArray = [];
 
         //First, check if the global expiries array is empty. If so, just return without doing anything.
         if (state.TimeKeeperGlobals.Expiries.length == 0) {
-            return;
+            return newExpiryArray;
         }
 
         //This function loops through all the expiries in the global expiries array
         //For each one that has not yet expired, a new expiry entry is made in a local array
-        var newExpiryArray = [];
-
         var expiryCount = state.TimeKeeperGlobals.Expiries.length;
         var expiryIndex;
         for (expiryIndex = 0; expiryIndex < expiryCount; expiryIndex++) {
-            if (this.CheckExpiry(state.TimeKeeperGlobals.Expiries[expiryIndex]) == false) {
+            if (this.HasExpired(state.TimeKeeperGlobals.Expiries[expiryIndex]) == false) {
                 newExpiryArray.push(state.TimeKeeperGlobals.Expiries[expiryIndex]);
             }
         }
 
-        //Update global expiry array with the updated expiry array
-        state.TimeKeeperGlobals.Expiries = newExpiryArray;
+        return newExpiryArray;
     }
 } 
 		
@@ -229,9 +286,10 @@ on("chat:message", function (msg) {
                 var msgArray = [];
 
                 //Whisper the time and current expiries to the GM
-                if (message.indexOf(" show") !== -1) {
-                    timeKeeper.ShowTime(state.TimeKeeperGlobals.CurrentTime);
-                    timeKeeper.CheckAllExpiries();
+                if (message.indexOf(" show") !== -1) {                    
+                    timeKeeper.ShowTimeAndExpiries(state.TimeKeeperGlobals.Expiries);
+                    //Update the expiries list with only active expiries
+                    state.TimeKeeperGlobals.Expiries = timeKeeper.GetActiveExpiries();
                 }
 
                 //Set the time, then whisper current time and current expiries to the GM
@@ -239,8 +297,9 @@ on("chat:message", function (msg) {
                     msgArray = message.split(" ", 3);
                     if (msgArray.length == 3) {
                         if (timeKeeper.SetTime(msgArray[2]) == true) {
-                            timeKeeper.ShowTime(state.TimeKeeperGlobals.CurrentTime);
-                            timeKeeper.CheckAllExpiries();
+                            timeKeeper.ShowTimeAndExpiries(state.TimeKeeperGlobals.Expiries);
+                            //Update the expiries list with only active expiries
+                            state.TimeKeeperGlobals.Expiries = timeKeeper.GetActiveExpiries();
                         }
                     }
                  }
@@ -249,8 +308,9 @@ on("chat:message", function (msg) {
                 if (message.indexOf(" add ") !== -1) {
                     msgArray = message.split(" ", 3);
                     if (timeKeeper.AddSubtractTime(msgArray[2]) == true) {
-                        timeKeeper.ShowTime(state.TimeKeeperGlobals.CurrentTime);
-                        timeKeeper.CheckAllExpiries();
+                        timeKeeper.ShowTimeAndExpiries(state.TimeKeeperGlobals.Expiries);
+                        //Update the expiries list with only active expiries
+                        state.TimeKeeperGlobals.Expiries = timeKeeper.GetActiveExpiries();
                     }
                 }
 
@@ -260,11 +320,9 @@ on("chat:message", function (msg) {
                     msgArray = expiryString.split("|") //pipe symbol used here since it is unlikely to appear in character names
                     if (timeKeeper.AddExpiry(msgArray[0], msgArray[1], msgArray[2]) == true) {
                         timeKeeper.SortExpiries();
-                        sendChat(timeKeeper.ChatName, "/w gm " + msgArray[0] + "'s " + msgArray[1] + " entered with expiry in "
-                            + timeKeeper.FormatTimeAsString(msgArray[2]));
+                        timeKeeper.ShowTimeAndExpiries(state.TimeKeeperGlobals.Expiries);
                     }
                 }
-
             }
         }
     }
