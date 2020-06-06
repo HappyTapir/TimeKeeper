@@ -26,6 +26,9 @@ These are some convenient macros to utilize the script:
     <td>!tk add 10</td><td>Adds 10 minutes to the current time.</td>
   </tr>
   <tr>
+    <td>!tk exp ?{Character Name}|?{Ability, effect or spell}|?{Duration in minutes}</td><td>Simple macro to quickly add an expiry. Of course, you could use it to add something like a time when goblins are going to arrive at the PCs' camp.</td>
+  </tr>
+  <tr>
     <td>!tk exp @{selected|token_name}|?{Ability, effect or spell}|?{Duration in minutes}</td><td>This macro is meant to be used as a Token Action. Adds an expiry for the character whose token was selected.</td>
   </tr>
   <tr>
