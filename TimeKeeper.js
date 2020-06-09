@@ -9,6 +9,7 @@
  * !tk set X (sets the current time to X, expressed in minutes X)
  * !tk add X (adds X minutes to the current time; use negative values to subtract time)
  * !tk exp charactername|effectname|X (adds expiry for charactername of effectname, expiring in X minutes)
+ * !tk del charactername|effectname|X (deletes expiry for charactername of effectname, expiring in X minutes)
  */
 
 /* TODO: Add functionality where the players can retrieve non-DM-only flagged reminders.
@@ -29,7 +30,7 @@ var HappyTapir = HappyTapir || {};
 //Declaration of the class TimeKeeper (under the HappyTapir namespace)
 HappyTapir.TimeKeeper = function () {
     this.ChatName = "TimeKeeper";
-    this.Version = "0.2.0";
+    this.Version = "0.2.1";
 
     this.Initialize = function () {
         //Setting global variables to persist between sessions
@@ -100,6 +101,7 @@ HappyTapir.TimeKeeper = function () {
         messageArray.push("{{!tk set <i>X</i>- sets time to <i>X</i> minutes.}}");
         messageArray.push("{{!tk add <i>X</i> - adds <i>X</i> minutes to time. Use negative values to subtract time.}}");
         messageArray.push("{{!tk exp <i>name</i>|<i>effect</i>|<i>duration</i> - adds an expiry <i>effect</i> for character <i>name</i>, with <i>duration</i> in minutes.}}");
+        messageArray.push("{{!tk del <i>name</i>|<i>effect</i>|<i>remaining</i> - deletes the expiry <i>effect</i> for character <i>name</i>, ending in <i>remaining</i> minutes.}}");
 
         sendChat(this.ChatName, this.BuildChatMessage(messageArray));
     }
@@ -160,6 +162,7 @@ HappyTapir.TimeKeeper = function () {
         if (expiryArray !== undefined) {
             var remainingTime;
             var remainingAsString;
+            var deleteButton;
             var i;
             for (i = 0; i < expiryArray.length; i++) {
                 if (this.HasExpired(expiryArray[i])) {
@@ -168,7 +171,12 @@ HappyTapir.TimeKeeper = function () {
                 else {
                     remainingTime = parseInt(expiryArray[i][2]) - parseInt(state.TimeKeeperGlobals.CurrentTime);
                     remainingAsString = this.FormatTimeAsString(remainingTime, false);
-                    messageArray.push("{{" + expiryArray[i][0] + "'s " + expiryArray[i][1] + "=" + remainingAsString + "}}");
+                    deleteButton = "[x](!tk del " + expiryArray[i][0] + "|" + expiryArray[i][1] + "|" + remainingTime + ")";
+
+                    //Button for deleting at the end, after the time
+                    //messageArray.push("{{" + expiryArray[i][0] + "'s " + expiryArray[i][1] + "=" + remainingAsString + " " + deleteButton + "}}");
+                    //Button for deleting at the start, before the name
+                    messageArray.push("{{" + deleteButton + " " + expiryArray[i][0] + "'s " + expiryArray[i][1] + "=" + remainingAsString + "}}");
                 }
             }
         }
@@ -261,6 +269,41 @@ HappyTapir.TimeKeeper = function () {
 
         return newExpiryArray;
     }
+
+    this.DeleteExpiry = function (expiryItem) {
+        //First find the exact expiry
+        var activeExpiryList = this.GetActiveExpiries();
+        var i = 0;
+        var indexToDelete = -1;
+
+        //Add the current time to the expiryItem's duration
+        //so that we can compare with what is stored in the
+        //current global expirylist
+        expiryItem[2] = parseInt(expiryItem[2]) + parseInt(state.TimeKeeperGlobals.CurrentTime);
+
+        //Find the expiry to delete
+        for (i = 0; i < activeExpiryList.length; i++) {
+            if (activeExpiryList[i].toString() == expiryItem.toString()) {
+                indexToDelete = i;
+            }
+        }
+  
+        //If we did not find the entry, send an error message 
+        if (indexToDelete < 0) {
+            var errorMessage = [];
+            errorMessage[0] = "Unable to find expiry: ";
+            errorMessage[1] = expiryItem[0] + "|" + expiryItem[1] + "|" + expiryItem[2];
+            this.SendErrorMessage(errorMessage);
+            return false;
+        }
+
+        //Delete the entry from the temporary array of expiries
+        activeExpiryList.splice(indexToDelete, 1);
+
+        //Assign the updated temporary array to the global list of expiries
+        state.TimeKeeperGlobals.Expiries = activeExpiryList;
+        return true;
+    }
 } 
 		
 on('ready', function () {
@@ -314,11 +357,21 @@ on("chat:message", function (msg) {
                     }
                 }
 
-                //Add expiry, sort the expiry list, and then provide feedback to the GM about the entered expiry
+                //Add expiry, sort the expiry list, and then whisper current time and current expiries to the GM
                 if (message.indexOf(" exp ") !== -1) {
                     var expiryString = message.slice(7).trim();
                     msgArray = expiryString.split("|") //pipe symbol used here since it is unlikely to appear in character names
                     if (timeKeeper.AddExpiry(msgArray[0], msgArray[1], msgArray[2]) == true) {
+                        timeKeeper.SortExpiries();
+                        timeKeeper.ShowTimeAndExpiries(state.TimeKeeperGlobals.Expiries);
+                    }
+                }
+
+                //Delete expiry, sort the expiry list, and then whisper current time and current expiries to the GM
+                if (message.indexOf(" del ") !== -1) {
+                    var expiryString = message.slice(7).trim();
+                    msgArray = expiryString.split("|") //pipe symbol used here since it is unlikely to appear in character names
+                    if (timeKeeper.DeleteExpiry(msgArray) == true) {
                         timeKeeper.SortExpiries();
                         timeKeeper.ShowTimeAndExpiries(state.TimeKeeperGlobals.Expiries);
                     }
