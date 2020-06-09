@@ -1,13 +1,14 @@
 # TimeKeeper
-Roll20 API script which tracks time and expiries. The time and expiries persist and are tracked between sessions. The GM advances the time; there is no automatic advancement of time. The script currently communicates only with the GM.
+Roll20 API script which tracks time and expiries. The time and expiries persist and are tracked between sessions. The GM advances the time; there is no automatic advancement of time. The script currently communicates only with the GM. Each expiry added will be listed with a button [x] that can be used to delete the expiry. Useful if a character's concentration fails, or if the expiry being tracked is no longer relevant.
 
-Current commands (version 0.2.0):
+Current commands (version 0.2.1):
 <ul>
   <li>!tk - shows commands.</li>
   <li>!tk show - displays current time.</li>
   <li>!tk set X - sets current time to X minutes.</li>
   <li>!tk add X - adds X minutes to the current time. Use negative values to subtract time.</li>
   <li>!tk exp charactername|effect|duration - adds an expiry effect for charactername with a duration in minutes. Example: !tk exp Delgon the Dwarf|Battle Rage|10 will add and track the expiry of the Battle Rage for Delgon the Dwarf. The Battle Rage will expire in 10 minutes from the time it was added.</li>
+  <li>!tk del charactername|effect|remaining - deletes the expiry <i>effect</i> expiring in <i>remaining</i> minutes for charactername.</li>
 </ul>
 
 # How do I...?
@@ -43,5 +44,6 @@ These are some convenient macros to utilize the script:
   <li>0.1.2 Changed method of determining whether commands are sent by GM.</li>
   <li>0.1.3 Added handling of incorrect inputs, with feedback in case an invalid time or expiry entry is attempted.</li>
   <li>0.2.0 Recoded. Added formatting using the Roll20 default template. Overall output is less verbose and less spammy (hopefully).</li>
+  <li>0.2.1 Added output of buttons that when clicked delete a certain expiry. Added deletion of expiries before they expire.</li>
 </ul>
   
